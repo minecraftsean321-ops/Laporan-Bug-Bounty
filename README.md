@@ -685,6 +685,18 @@ dig its.ac.id ANY
 
 <img width="981" height="477" alt="image" src="https://github.com/user-attachments/assets/3c3665af-49d1-4cf5-a23c-676f8deadd82" />
 
+Kita melihat status dari subdomain yang berhasil kita temukan:
+
+```
+~/go/bin/httpx -l tier1-3.txt -silent -status-code -title -tech-detect -o alive.txt
+```
+<img width="971" height="393" alt="image" src="https://github.com/user-attachments/assets/e095ff35-2b3b-47b4-b1ab-3c0591238819" />
+
+Scan nuclei ke host yang alive: 
+
+```
+cat alive.txt | awk '{print $1}' | nuclei -tags cve,exposure,misconfig,tech -o nuclei-results.txt
+```
 
 
 ## 1. Exposed .git Directory (Access Restricted)
