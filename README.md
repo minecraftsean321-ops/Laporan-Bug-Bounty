@@ -698,6 +698,11 @@ Scan nuclei ke host yang alive:
 cat alive.txt | awk '{print $1}' | nuclei -tags cve,exposure,misconfig,tech -o nuclei-results.txt
 ```
 
+<img width="1005" height="624" alt="image" src="https://github.com/user-attachments/assets/eac2113d-53e5-4bca-8067-41674c5f70d5" />
+
+<img width="983" height="616" alt="image" src="https://github.com/user-attachments/assets/272c3ca7-afc8-4e37-b2ec-cdc9bddb5014" />
+
+
 
 ## 1. Exposed .git Directory (Access Restricted)
 
@@ -811,4 +816,36 @@ openssl s_client -connect servicedesk.its.ac.id:443 -tls1_1
 
 <img width="959" height="594" alt="image" src="https://github.com/user-attachments/assets/209f8a45-9fa6-4f0d-b01e-a452aa0d81f2" />
 
+## 4. Sensitive Information Disclosure via Directory Listing
 
+Deskripsi: Directory /upload/ pada aplikasi SIMPEG (Sistem Kepegawaian) ITS tidak memiliki proteksi index/listing, sehingga seluruh isi direktori dapat diakses dan dienumerasi oleh pihak yang tidak terautentikasi. Direktori ini berisi file dengan pola penamaan yang mengindikasikan nomor identitas pegawai (contoh: 58296-1.pdf, 58297-1.pdf) serta folder skp_xls/ yang kemungkinan berisi dokumen SKP (Sasaran Kerja Pegawai).
+
+Sevirity: Medium - High
+
+Steps to Reproduce: 
+
+1. Coba akses `https://kepegawaian.its.ac.id/upload/` menggunakan curl
+
+   ```
+    curl -s https://kepegawaian.its.ac.id/upload/ | head -50
+   ```
+
+   Disitu dapat terlihat bahwa ada file dari pegawai dengan kode yang memiliki pola penamaan seperi yang disebutkan di deskripsi.
+
+2. File individual dapat diakses langsung, contoh:
+
+   ```
+    curl -sI https://kepegawaian.its.ac.id/upload/58296-1.pdf
+   ```
+   Disitu terlihat respons nya HTTP/1.1 200 OK, yang menandakan file dapat diunduh tanpa autentikasi.
+
+Dampak:
+Pihak yang tidak berwenang dapat mengenumerasi dan mengunduh dokumen yang berpotensi berisi data pribadi karyawan (nama, NIP, penilaian kinerja), yang jika benar merupakan pelanggaran terhadap kerahasiaan data pribadi (berpotensi melanggar UU PDP).
+
+Rekomendasi: 
+1. Nonaktifkan directory listing pada konfigurasi Apache (Options -Indexes) untuk direktori /upload/.
+2. Tambahkan file index.php/index.html kosong di setiap subdirektori sebagai mitigasi tambahan.
+3. Pindahkan file-file sensitif ke luar web root, dan sajikan hanya melalui endpoint yang mewajibkan autentikasi & otorisasi.
+   
+
+  
