@@ -49,4 +49,62 @@ Dampak: Halaman ini rawan disalahgunakan untuk UI redress attack — attacker bi
 
 Rekomendasi: Tambahkan header X-Frame-Options: SAMEORIGIN (atau DENY kalau nggak butuh embed sama sekali), dan/atau Content-Security-Policy: frame-ancestors 'self'.
 
+## 3. Deprecated TLS Protocol Versions Supported (TLS 1.0 & TLS 1.1)
+
+Deskripsi: Berdasarkan scan yang saya lakukan menggunakan testssl.sh, terdapat protokol TLS 1.0 & TLS 1.1 yang masih aktif padahal protokol tersebut telah di-deprecate resmi oleh IETF (RFC 8996, 2021) karena kelemahan kriptografi.
+
+Langkah": 
+
+Download tools testssl.sh.git terlebih dahulu: 
+
+```
+git clone --depth 1 https://github.com/drwetter/testssl.sh.git
+```
+
+Masuk ke directory github tersebut, lalu ubah akses ke file testssl.sh menjadi executable:
+
+```
+chmod +x testssl.sh
+```
+
+Lalu scan testssl.sh:
+
+```
+./testssl.sh https://servicedesk.its.ac.id
+```
+
+Severity: Medium
+
+CWE: CWE-326 (Inadequate Encryption Strength) / CWE-327 (Use of a Broken or Risky Cryptographic Algorithm)
+
+Dampak: 
+
+1. Kerentanan protokol turunan — TLS 1.0/1.1 rentan terhadap serangan klasik seperti BEAST (eksploitasi cipher CBC) dan POODLE-style downgrade, meski mitigasi di sisi browser modern udah mengurangi risiko praktisnya.
+2. Downgrade attack surface — selama protokol lama masih di-offer, ada celah teoretis buat attacker memaksa client “turun” ke protokol yang lebih lemah lewat manipulasi handshake (man-in-the-middle), terutama buat client lawas yang masih support TLS 1.0/1.1.
+3. Non-compliance — banyak standar keamanan (PCI DSS sejak 2018, NIST SP 800-52 Rev. 2) udah melarang penggunaan TLS 1.0/1.1 di sistem yang menangani data sensitif. Kalau servicedesk ini nyimpan data pribadi mahasiswa/staff, ini jadi concern compliance juga.
+4. Reputasi & grading eksternal — tools audit eksternal (SSL Labs, dll) bakal cap grade maks B (capped) selama protokol lama masih aktif, walau konfigurasi lain udah bagus.
+
+Rekomendasi: 
+
+1. Disable TLS 1.0 dan TLS 1.1 di konfigurasi server (nginx/Apache), sisakan TLS 1.2 minimum.
+2. Aktifkan TLS 1.3 — saat ini hasil scan nunjukin TLS 1.3 tidak didukung sama sekali, padahal ini standar modern yang lebih cepat dan lebih aman (menghilangkan banyak kelas serangan lama by design).
+3. Setelah disable, verifikasi ulang pakai command yang sama (openssl s_client -tls1) — harusnya hasilnya berubah jadi connection refused/handshake failure.
+4. Review juga cipher suite yang di-offer, prioritaskan AEAD cipher (GCM) dibanding CBC untuk protokol yang masih dipertahankan.
+
+Bukti bahwa TLS 1.0 masih aktif:
+
+```
+openssl s_client -connect servicedesk.its.ac.id:443 -tls1
+```
+
+<img width="956" height="595" alt="image" src="https://github.com/user-attachments/assets/f89417f1-831e-474e-a422-c43e3b1c7c61" />
+
+Bukti bahwa TLS 1.1 masih aktif:
+
+```
+openssl s_client -connect servicedesk.its.ac.id:443 -tls1_1
+```
+
+<img width="959" height="594" alt="image" src="https://github.com/user-attachments/assets/209f8a45-9fa6-4f0d-b01e-a452aa0d81f2" />
+
 
