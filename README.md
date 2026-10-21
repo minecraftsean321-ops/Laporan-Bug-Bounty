@@ -73,6 +73,11 @@ Lalu scan testssl.sh:
 ./testssl.sh https://servicedesk.its.ac.id
 ```
 
+<img width="999" height="617" alt="image" src="https://github.com/user-attachments/assets/e1eace12-3c09-4d9c-afe7-af5724dc3429" />
+
+<img width="1000" height="628" alt="image" src="https://github.com/user-attachments/assets/9165f3cb-bc28-4258-b420-16adefec588f" />
+
+
 Severity: Medium
 
 CWE: CWE-326 (Inadequate Encryption Strength) / CWE-327 (Use of a Broken or Risky Cryptographic Algorithm)
