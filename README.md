@@ -1,5 +1,11 @@
 # Laporan-Bug-Bounty
 
+| Nama                 | NRP        |
+|----------------------|------------|
+| Hasheemi             | 5027251015 |
+| Sean Arthur Tamajaya | 5027251050 |
+| Mahrinza Redouane Z. | 5027251074 |
+
 ## Tahap Reconnaissance
 
 ```
