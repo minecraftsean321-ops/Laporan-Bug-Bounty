@@ -6,7 +6,6 @@
 | Sean Arthur Tamajaya | 5027251050 |
 | Mahrinza Redouane Z. | 5027251074 |
 
-
 ## 1. Exposed .git Directory (Access Restricted) - Found by Sean (5027251050)
 
 Ditemukannya file .git/config yang saat ini sudah di blok aksesnya tetapi bisa terbuka jika ada misconfig kecil (atau ada endpoint lain dalam .git/ yang nggak ke-cover rule block-nya).
@@ -28,6 +27,7 @@ Dari ketiga percobaan tersebut dapat disimpulkan bahwa block-nya itu bersifat fo
 Dampak: Saat ini rendah karena akses diblok. Tapi risiko residual tetap ada — perubahan konfigurasi server (misal migrasi, update vhost, atau salah deploy ulang) bisa membuka akses tanpa sengaja, yang berpotensi membocorkan seluruh source code & history commit.
 
 Rekomendasi: Hapus folder .git dari webroot production sepenuhnya (bukan cuma block akses), dan pastikan proses deployment ke depan nggak nge-copy folder VCS ke server production.
+
 
 ## 2. Clickjacking — Missing X-Frame-Options / CSP frame-ancestors - Found by Sean (5027251050)
 
@@ -55,6 +55,7 @@ Dan saat file dibuka hasilnya seperti ini:
 Dampak: Halaman ini rawan disalahgunakan untuk UI redress attack — attacker bisa overlay elemen transparan/tersamar di atas iframe buat mengelabui user supaya klik tombol tertentu (misal “Masuk”) tanpa sadar, berpotensi memicu aksi tidak diinginkan kalau dikombinasikan dengan teknik social engineering lain.
 
 Rekomendasi: Tambahkan header X-Frame-Options: SAMEORIGIN (atau DENY kalau nggak butuh embed sama sekali), dan/atau Content-Security-Policy: frame-ancestors 'self'.
+
 
 ## 3. Deprecated TLS Protocol Versions Supported (TLS 1.0 & TLS 1.1) - Found by Sean (5027251050)
 
@@ -119,6 +120,7 @@ openssl s_client -connect servicedesk.its.ac.id:443 -tls1_1
 
 <img width="959" height="594" alt="image" src="https://github.com/user-attachments/assets/209f8a45-9fa6-4f0d-b01e-a452aa0d81f2" />
 
+
 ## 4. Sensitive Information Disclosure via Directory Listing - Found by Sean (5027251050)
 
 Deskripsi: Directory /upload/ pada aplikasi SIMPEG (Sistem Kepegawaian) ITS tidak memiliki proteksi index/listing, sehingga seluruh isi direktori dapat diakses dan dienumerasi oleh pihak yang tidak terautentikasi. Direktori ini berisi file dengan pola penamaan yang mengindikasikan nomor identitas pegawai (contoh: 58296-1.pdf, 58297-1.pdf) serta folder skp_xls/ yang kemungkinan berisi dokumen SKP (Sasaran Kerja Pegawai).
@@ -149,6 +151,7 @@ Rekomendasi:
 1. Nonaktifkan directory listing pada konfigurasi Apache (Options -Indexes) untuk direktori /upload/.
 2. Tambahkan file index.php/index.html kosong di setiap subdirektori sebagai mitigasi tambahan.
 3. Pindahkan file-file sensitif ke luar web root, dan sajikan hanya melalui endpoint yang mewajibkan autentikasi & otorisasi.
+
 
 ## 5. Pengujian Tambahan - Found by Mahrinza Redouane Z.
 
