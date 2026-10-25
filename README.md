@@ -6,6 +6,8 @@
 | Sean Arthur Tamajaya | 5027251050 |
 | Mahrinza Redouane Z. | 5027251074 |
 
+Link github: https://github.com/minecraftsean321-ops/Laporan-Bug-Bounty
+
 ## 1. Exposed .git Directory (Access Restricted) - Found by Sean (5027251050)
 
 Ditemukannya file .git/config yang saat ini sudah di blok aksesnya tetapi bisa terbuka jika ada misconfig kecil (atau ada endpoint lain dalam .git/ yang nggak ke-cover rule block-nya).
