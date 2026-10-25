@@ -2,12 +2,12 @@
 
 | Nama                 | NRP        |
 |----------------------|------------|
-| Hasheemi Rafsanjani             | 5027251015 |
+| Hasheemi Rafsanjani  | 5027251015 |
 | Sean Arthur Tamajaya | 5027251050 |
 | Mahrinza Redouane Z. | 5027251074 |
 
 
-## 1. Exposed .git Directory (Access Restricted) - Found by Sean 
+## 1. Exposed .git Directory (Access Restricted) - Found by Sean (5027251050)
 
 Ditemukannya file .git/config yang saat ini sudah di blok aksesnya tetapi bisa terbuka jika ada misconfig kecil (atau ada endpoint lain dalam .git/ yang nggak ke-cover rule block-nya).
 
@@ -29,7 +29,7 @@ Dampak: Saat ini rendah karena akses diblok. Tapi risiko residual tetap ada — 
 
 Rekomendasi: Hapus folder .git dari webroot production sepenuhnya (bukan cuma block akses), dan pastikan proses deployment ke depan nggak nge-copy folder VCS ke server production.
 
-## 2. Clickjacking — Missing X-Frame-Options / CSP frame-ancestors - Found by Sean
+## 2. Clickjacking — Missing X-Frame-Options / CSP frame-ancestors - Found by Sean (5027251050)
 
 <img width="977" height="235" alt="image" src="https://github.com/user-attachments/assets/56dd9c7f-5dee-4c33-b3de-f6e53abee878" />  
 
@@ -56,7 +56,7 @@ Dampak: Halaman ini rawan disalahgunakan untuk UI redress attack — attacker bi
 
 Rekomendasi: Tambahkan header X-Frame-Options: SAMEORIGIN (atau DENY kalau nggak butuh embed sama sekali), dan/atau Content-Security-Policy: frame-ancestors 'self'.
 
-## 3. Deprecated TLS Protocol Versions Supported (TLS 1.0 & TLS 1.1) - Found by Sean 
+## 3. Deprecated TLS Protocol Versions Supported (TLS 1.0 & TLS 1.1) - Found by Sean (5027251050)
 
 Deskripsi: Berdasarkan scan yang saya lakukan menggunakan testssl.sh, terdapat protokol TLS 1.0 & TLS 1.1 yang masih aktif padahal protokol tersebut telah di-deprecate resmi oleh IETF (RFC 8996, 2021) karena kelemahan kriptografi.
 
@@ -119,7 +119,7 @@ openssl s_client -connect servicedesk.its.ac.id:443 -tls1_1
 
 <img width="959" height="594" alt="image" src="https://github.com/user-attachments/assets/209f8a45-9fa6-4f0d-b01e-a452aa0d81f2" />
 
-## 4. Sensitive Information Disclosure via Directory Listing - Found by Sean
+## 4. Sensitive Information Disclosure via Directory Listing - Found by Sean (5027251050)
 
 Deskripsi: Directory /upload/ pada aplikasi SIMPEG (Sistem Kepegawaian) ITS tidak memiliki proteksi index/listing, sehingga seluruh isi direktori dapat diakses dan dienumerasi oleh pihak yang tidak terautentikasi. Direktori ini berisi file dengan pola penamaan yang mengindikasikan nomor identitas pegawai (contoh: 58296-1.pdf, 58297-1.pdf) serta folder skp_xls/ yang kemungkinan berisi dokumen SKP (Sasaran Kerja Pegawai).
 
