@@ -2,7 +2,7 @@
 
 | Nama                 | NRP        |
 |----------------------|------------|
-| Hasheemi             | 5027251015 |
+| Hasheemi Rafsanjani             | 5027251015 |
 | Sean Arthur Tamajaya | 5027251050 |
 | Mahrinza Redouane Z. | 5027251074 |
 
@@ -177,6 +177,49 @@ Rekomendasi:
 <img width="1375" height="408" alt="bukti_2" src="https://github.com/user-attachments/assets/5cf22a14-d3c9-47ef-9719-8743ce22350c" />
 
 *Bukti 2. Header `X-Powered-By: PHP/8.0.13` terlihat pada respons API. Ini membuktikan pengungkapan versi di header, bukan verifikasi versi runtime aktual.*
+
+
+Tentu, berikut adalah tambahan ringkasan untuk laporan Anda (Hasheemi). Saya buatkan dalam format markdown yang rapi, singkat, dan menyediakan 2 slot gambar untuk dokumentasi (satu untuk Laravel Debug/SQL, satu untuk Weak File Validation).
+
+Silakan *copy-paste* bagian ini dan letakkan **paling bawah** setelah bagian nomor 5 (Mahrinza) di file `README.md` Anda.
+
+---
+
+## 6. Pengujian Tambahan - Found by Hasheemi (5027251015)
+
+**Waktu:** 21–22 Oktober 2026  
+**Target:** `thesis.its.ac.id`  
+**Metode:** Analisis error (Error-based Analysis), manipulasi HTTP Request via Burp Suite, dan *source code review* (view-source).
+
+**Hasil Utama:** Ditemukan dua kelas kerentanan utama pada aplikasi myITS Thesis. Pertama, *Information Disclosure* akibat konfigurasi `APP_DEBUG=true` yang membocorkan *stack trace*, *path* direktori server (`/var/www/html/...`), dan *raw query* SQL Server. Kedua, *Weak File Type Validation* pada *endpoint* unggah berkas yang memungkinkan *bypass* validasi menggunakan manipulasi *Content-Type* dan *Polyglot File* (PHP yang disamarkan sebagai GIF).
+
+### Observasi Risiko Keamanan
+
+| Observasi | Potensi Risiko | Rekomendasi |
+|---|---|---|
+| **Laravel Debug Mode Aktif (`APP_DEBUG=true`)** pada environment produksi. Error seperti `TypeError` dan konversi tipe SQL Server memunculkan halaman *Whoops* yang membocorkan struktur database (`sdm`, `lab_sdm`, `unit_organisasi`), *path* direktori, dan nama *namespace*. | **Medium:** Penyerang dapat memetakan skema database, memahami alur logika bisnis, dan mempersiapkan serangan lanjutan (seperti SQLi jika ada *endpoint* lain yang rentan). | Set `APP_DEBUG=false` dan `APP_ENV=production` di file `.env`. Terapkan *custom error handler* (HTTP 500) tanpa detail teknis. Validasi tipe data (UUID, Integer) di Controller/FormRequest. |
+| **Weak File Validation pada `/tesis/usulan/upload`**. Backend menerima file PHP asli (dengan manipulasi `Content-Type`) dan file *Polyglot* (`GIF89a` + kode PHP) karena hanya bergantung pada *Magic Bytes* dan *input* klien. | **Medium:** Melanggar prinsip *defense in depth*. Jika konfigurasi S3 berubah atau file diproses oleh *endpoint* lain, dapat berujung pada *Stored XSS* atau *RCE*. | Terapkan validasi ketat di *backend* menggunakan aturan Laravel `mimes:pdf,png,jpg,jpeg|max:5120`. Gunakan *library* `finfo` untuk inspeksi MIME *type* aktual. Selalu ganti nama file dengan UUID. |
+
+### Dokumentasi (Bukti Screenshot)
+
+**1. Bukti Kebocoran Informasi (Laravel Debug & SQL Server)**
+*(Menunjukkan error `TypeError`, *path* `/var/www/html/...`, dan *query* `SELECT ... FROM sdm`)*
+
+<img width="959" height="539" alt="Screenshot 2026-10-21 183734" src="https://github.com/user-attachments/assets/d9ec0c65-e52a-4cc9-bab4-d989fb450e60" />
+
+<img width="959" height="539" alt="Screenshot 2026-10-21 083302" src="https://github.com/user-attachments/assets/b82acbf6-683c-45f7-be7d-ba1f4a1b801f" />
+
+
+
+**2. Bukti Bypass Validasi File (Polyglot/Native PHP)**
+*(Menunjukkan respons JSON Burp Suite dengan `file_ext: "gif"` atau `application/x-php` dan `status: "OK"`)*
+
+<img width="717" height="313" alt="Screenshot 2026-10-22 081026" src="https://github.com/user-attachments/assets/d956055b-327d-4a7e-86ad-37eb1e5965b8" />
+
+<img width="866" height="332" alt="Screenshot 2026-10-21 171853" src="https://github.com/user-attachments/assets/7d037a71-0841-402a-b982-fa1ac297245d" />
+
+
+--- 
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    
