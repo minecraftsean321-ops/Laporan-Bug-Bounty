@@ -153,7 +153,7 @@ Rekomendasi:
 3. Pindahkan file-file sensitif ke luar web root, dan sajikan hanya melalui endpoint yang mewajibkan autentikasi & otorisasi.
 
 
-## 5. Pengujian Tambahan - Found by Mahrinza Redouane Z.
+## 5. Pengujian Tambahan - Found by Mahrinza Redouane Z. (5027251074)
 
 **Waktu:** 24–25 Oktober 2026  
 **Target:** `portal.its.ac.id`, `its.ac.id`, `its.id`  
@@ -223,6 +223,99 @@ Silakan *copy-paste* bagian ini dan letakkan **paling bawah** setelah bagian nom
 
 
 --- 
+
+## 7. Reflected DOM-based XSS pada Verifikasi Email — Found by Mahrinza Redouane Z. (5027251074)
+
+**Tanggal pengujian:** 25 Oktober 2026  
+**Target:** `https://portal.its.ac.id/verify/[code-id]`  
+**Parameter yang terpengaruh:** `e` (nilai Base64 pada query string)  
+**Jenis:** DOM-based Cross-Site Scripting (XSS), sumber data URL  
+**CWE:** CWE-79 — Improper Neutralization of Input During Web Page Generation  
+**Severity usulan:** Medium, perlu penilaian akhir DPTSI berdasarkan prasyarat dan konteks autentikasi.
+
+### 7.1 Deskripsi
+
+Halaman verifikasi email memproses parameter URL `e` yang dikodekan dalam Base64 dan memasukkan hasil decoding ke elemen `#statusVerifikasi` menggunakan `innerHTML`. Karena data dari URL tidak di-escape sebagai teks, markup dan atribut event handler dapat diinterpretasikan oleh browser.
+
+Pemeriksaan JavaScript frontend menemukan jalur pemanggilan berikut:
+
+1. Route `/verify/[code-id]` membaca `code-id` dan `e`, lalu memanggil fungsi ekspor `UG` (`confirmEmail`).
+2. Fungsi `confirmEmail` membaca `query.e` dan melakukan decoding Base64.
+3. Hasil decoding digunakan untuk membentuk HTML pada cabang respons sukses (`then`) maupun gagal (`catch`).
+4. PoC browser dengan parameter dummy membuktikan bahwa HTML dapat dimasukkan ke DOM dan kode JavaScript sederhana dapat berjalan ketika callback error dipicu secara lokal akibat pemblokiran request verifikasi oleh Firefox DevTools.
+
+**Cuplikan alur rentan (disederhanakan dari bundle frontend):**
+
+```javascript
+const decodedEmail = Buffer.from(router.query.e, 'base64').toString('ascii');
+
+// Baik pada hasil sukses maupun gagal, kode aslinya membangun HTML serupa:
+document.getElementById('statusVerifikasi').innerHTML =
+  message + ' <span class="tx-medium">' + decodedEmail + '</span>.';
+```
+
+Tidak terlihat encoding HTML untuk `decodedEmail` sebelum assignment ke `innerHTML`. *Base64 adalah encoding, bukan mekanisme sanitasi.*
+
+### 7.2 Bukti dan langkah reproduksi yang telah dilakukan
+
+Seluruh uji dilakukan dengan **kode verifikasi dummy** (`BB-DUMMY`), tanpa email/OTP asli. Tidak ada upaya membaca cookie, menyalin token, atau mengakses data pengguna lain.
+
+1. **HTML injection via URL.** Parameter `e` berisi encoding Base64 dari markup aman `<b>BB-URL-TEST-2026</b>`. Halaman menampilkan marker sebagai huruf tebal, dan Console menunjukkan `hasBoldElement: true` serta `renderedHTML` yang mengandung elemen `<b>`.
+2. **Eksekusi JavaScript tanpa eksfiltrasi.** Untuk pengujian berikutnya, parameter `e` diisi dengan encoding Base64 dari elemen HTML uji yang memicu event lokal dan hanya menetapkan `document.documentElement.dataset.bbImgPoc = 'executed'`. Tidak ada request keluar yang dipicu oleh kode uji.
+3. **Kontrol keselamatan:** Sebelum membuka URL kedua, Firefox DevTools dikonfigurasi untuk memblokir `POST /api/api/sso/verify/confirm/email`. Panel Network menampilkan **Blocked by DevTools** dan transfer `0 B` untuk request tersebut.
+4. **Hasil eksekusi:** Console menunjukkan `javascriptExecuted: true`, `imageInserted: true`, dan `handlerType: function`. Ini mengonfirmasi bahwa event handler dari markup yang dikendalikan oleh URL telah berjalan dalam browser uji.
+
+**Batasan penting:** Eksekusi JavaScript dibuktikan pada browser uji **dengan request verifikasi diblokir melalui DevTools**. Pada percobaan HTML marker sebelumnya, request dummy sempat mencapai server dan memperoleh HTTP 500; HTML tetap dirender, tetapi eksekusi JavaScript pada kondisi tanpa pemblokiran tidak diuji. Oleh sebab itu, laporan **tidak** mengklaim bypass verifikasi email, pengambilalihan akun, pencurian cookie, atau eskalasi hak akses.
+
+### 7.3 Dampak dan prasyarat
+
+Pengguna yang membuka URL verifikasi yang dibentuk pihak lain berpotensi mengeksekusi JavaScript di origin `portal.its.ac.id`, jika jalur DOM yang sama tercapai. Dampak yang mungkin termasuk manipulasi isi halaman atau interaksi dalam konteks sesi korban, tergantung kontrol keamanan tambahan. Dampak-dampak tersebut merupakan **risiko potensial**, bukan tindakan yang dilakukan pada pengujian.
+
+### 7.4 Rekomendasi
+
+- Ganti penyisipan konten URL dengan `innerHTML` menjadi `textContent`, atau bangun elemen melalui DOM API `createElement`/`append` dengan nilai teks dari `textContent`.
+- Validasi dan batasi parameter `e` untuk format email yang memang diharapkan; lakukan validasi juga di sisi server. Validasi format merupakan lapisan tambahan, bukan pengganti output encoding.
+- Pertimbangkan Content Security Policy (CSP) sebagai pertahanan tambahan, terutama pembatasan inline event handler; CSP tidak menggantikan perbaikan sink DOM.
+- Tinjau pemanggilan otomatis endpoint verifikasi agar kode dummy/tidak valid tidak memicu respons error internal `500` yang tidak perlu.
+
+**Contoh perbaikan penulisan ke DOM:**
+
+```javascript
+const target = document.getElementById('statusVerifikasi');
+const span = document.createElement('span');
+span.className = 'tx-medium';
+span.textContent = decodedEmail;
+
+target.replaceChildren(
+  document.createTextNode(`${message} `),
+  span,
+  document.createTextNode('.')
+);
+```
+
+### 7.5 Dokumentasi Screenshot
+
+**Bukti 7.1 — Halaman verifikasi menampilkan marker HTML dari parameter URL:**
+
+<img width="1918" height="866" alt="xss_1" src="https://github.com/user-attachments/assets/ce06b41e-f0e0-441a-93d6-1ecbac84c3df" />
+
+**Bukti 7.2 — Console menunjukkan elemen `<b>` benar-benar terbentuk (`hasBoldElement: true`):**
+
+<img width="849" height="301" alt="xss_2" src="https://github.com/user-attachments/assets/38c74561-84e3-4b1e-9909-9a72c7a00098" />
+
+**Bukti 7.3 — Sumber kode `confirmEmail`: parameter `query.e` didekode dengan Base64 lalu dimasukkan melalui `innerHTML`:**
+
+<img width="1220" height="488" alt="xss_3" src="https://github.com/user-attachments/assets/c17c6327-e457-45b3-9a4c-d7079ad45a61" />
+
+**Bukti 7.4 — Console mengonfirmasi PoC eksekusi JavaScript (`javascriptExecuted: true`):**
+
+<img width="1452" height="413" alt="xss_4" src="https://github.com/user-attachments/assets/326c3b46-1496-4e25-bca1-f81e403b3331" />
+
+**Bukti 7.5 — Network menunjukkan request POST verifikasi diblokir oleh Firefox DevTools saat PoC eksekusi:**
+
+<img width="1324" height="506" alt="xss_5" src="https://github.com/user-attachments/assets/663a20e4-4407-4cd0-8b1b-1db74fe59ce1" />
+
+---
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    
