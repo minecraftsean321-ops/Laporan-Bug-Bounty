@@ -150,6 +150,34 @@ Rekomendasi:
 2. Tambahkan file index.php/index.html kosong di setiap subdirektori sebagai mitigasi tambahan.
 3. Pindahkan file-file sensitif ke luar web root, dan sajikan hanya melalui endpoint yang mewajibkan autentikasi & otorisasi.
 
+## 5. Pengujian Tambahan - Found by Mahrinza Redouane Z.
+
+**Waktu:** 24–25 Oktober 2026  
+**Target:** `portal.its.ac.id`, `its.ac.id`, `its.id`  
+**Metode:** Recon ringan, pemeriksaan HTTP/TLS, Firefox Developer Tools, dan analisis HTML/JavaScript lokal.
+
+**Hasil utama:** Pada `portal.its.ac.id`, API `user-info` mengembalikan **401 sebelum login, 200 setelah login, dan 401 setelah logout**. Pemeriksaan akses anonim, pengumuman, browser storage, serta JavaScript tidak menunjukkan kebocoran data atau bypass yang terbukti. `its.ac.id` melakukan redirect ke `www.its.ac.id`, sedangkan `its.id` ke `shortener.its.ac.id`; tujuan redirect tidak diuji lebih lanjut karena cakupannya belum dikonfirmasi.
+
+### Observasi Risiko Keamanan
+
+| Observasi | Potensi risiko | Rekomendasi |
+|---|---|---|
+| Cookie `myits_portal_api_session` dan `PHPSESSID` terlihat tanpa `Secure`; `PHPSESSID` juga tanpa `HttpOnly`. | Paparan cookie pada kondisi tertentu; dampak bergantung pada fungsi cookie dan mitigasi HSTS yang sudah aktif. | Tinjau atribut `Secure` dan `HttpOnly` sesuai fungsi cookie. |
+| Header API menampilkan `PHP/8.0.13`. | Jika merupakan versi runtime sebenarnya tanpa patch tambahan, perangkat lunak dapat berada di luar dukungan keamanan. | Verifikasi versi aktual dan status patch PHP. |
+| CSP dan `X-Content-Type-Options` tidak terlihat pada respons root portal yang diperiksa. | Lapisan pertahanan browser berpotensi kurang lengkap; tidak membuktikan XSS. | Evaluasi CSP dan `X-Content-Type-Options`. |
+| JavaScript merujuk `localStorage.getItem("token")`; salah satu request mengirim `Bearer null`. | Perlu peninjauan konsistensi mekanisme autentikasi; token tersimpan atau bypass tidak terbukti. | Tinjau pengelolaan token dan header otorisasi. |
+
+
+**Bukti screenshot dari pengujian portal:**
+
+<img width="1919" height="170" alt="bukti_1" src="https://github.com/user-attachments/assets/f6c15b19-7b5c-420c-8f97-b60d5caf94b5" />
+
+*Bukti 1. Pengaturan `Secure` dan `HttpOnly` yang ditampilkan Firefox. Nilai cookie telah disensor; keberadaan atribut yang belum diaktifkan bukan bukti eksploitasi.*
+
+<img width="1375" height="408" alt="bukti_2" src="https://github.com/user-attachments/assets/5cf22a14-d3c9-47ef-9719-8743ce22350c" />
+
+*Bukti 2. Header `X-Powered-By: PHP/8.0.13` terlihat pada respons API. Ini membuktikan pengungkapan versi di header, bukan verifikasi versi runtime aktual.*
+
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
    
 
